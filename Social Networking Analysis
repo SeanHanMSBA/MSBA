@@ -1,2 +1,372 @@
 Welcome to the Sean Han's Social Networking Analysis 
 Please feel free to bookmark to follow project updates 
+
+#Cleansing & Scaling matrix 
+
+rm(list = ls(all = TRUE))
+library(igraph) 
+library(data.table)
+
+data = fread(file="sample_generated_network.csv", header = TRUE)
+
+#eliminate column 4,6,13,32,34,45 
+data = subset(data, select =-c(5,7,13,18,19,31))
+data = data[-c(15),]
+
+data = data[sample(nrow(data), replace = FALSE),]
+advice = data[,(ncol(data) - 4):ncol(data)]
+namekey = data[,1]
+
+data = data[,2:(ncol(data) - 5)]
+
+setcolorder(data, sample(colnames(data), replace = FALSE))
+
+data = cbind(namekey, data, advice)
+
+#Cleaning part ends here 
+
+##########################################################################################################################
+#1
+scale = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(-3, -2, -1, 0, 1, 2, 3, 0, 0))
+
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale[,1], scale[,2])
+
+adj = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj) = adj[,1]
+adj = adj[,-1]
+adj = adj[sort(rownames(adj)),sort(colnames(adj))]
+
+trusting = adj
+trusting[trusting < 0] = 0
+trusting = graph.adjacency(as.matrix(trusting), "directed", weighted = TRUE)
+
+for(i in seq_len(length(V(trusting)))){
+  
+  V(trusting)$color = "light blue"
+  
+  path_trusting = file.path("C:/Users/han05/Dropbox/MSBA Fall/MSBA/Social Network Analytics/graph/#1",paste(V(trusting),"#1plot",".pdf", sep = ""))
+  
+  pdf(file= path_trusting)
+  plot.igraph(trusting,vertex.label=NA, layout=layout.fruchterman.reingold, vertex.label.color="black",edge.color="black",edge.width=E(trusting)$weight,vertex.size = 12, edge.arrow.size=.5,edge.curved=FALSE)
+  dev.off()
+  
+}
+####################################################################################################################
+
+#2 go back to rm(list = ls(all = TRUE)) and cleaning again.
+
+scale2 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(3, 2, 1, 0, 0, 0, 0, 0, 0))
+
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale2[,1], scale2[,2])
+
+adj2 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj2) = adj2[,1]
+adj2 = adj2[,-1]
+adj2 = adj2[sort(rownames(adj2)),sort(colnames(adj2))]
+
+distrusting = adj2
+distrusting[distrusting < 0] = 0
+distrusting = graph.adjacency(as.matrix(distrusting), "directed", weighted = TRUE)
+
+
+for(i in seq_len(length(V(distrusting)))){
+  colstep<-50
+  pal<- colorRampPalette(c("grey80","dark red"))
+  V(distrusting)$color<- pal(colstep) [as.numeric(cut(V(distrusting), breaks=colstep))]
+  
+  path_distrusting = file.path("C:/Users/han05/Dropbox/MSBA Fall/MSBA/Social Network Analytics/graph/#2",paste(V(distrusting),"#2plot",".pdf", sep = ""))
+  
+  pdf(file= path_distrusting)
+  plot.igraph(distrusting,vertex.label=NA, layout=layout.fruchterman.reingold, pch=10, cex=5,edge.width=E(distrusting)$weight,vertex.size = 12, edge.arrow.size=.5,edge.curved=FALSE)
+  dev.off()
+  
+}
+
+
+
+###############################################################################################
+#3 go back to rm(list = ls(all = TRUE)) and cleaning again
+
+advice_edge1 = cbind(data[,1], data$V38)
+advice_edge2 = cbind(data[,1], data$V39)
+advice_edge3 = cbind(data[,1], data$V40)
+advice_edge4 = cbind(data[,1], data$V41)
+advice_edge5 = cbind(data[,1], data$V42)
+
+advice_edges = rbind(advice_edge1, advice_edge2, advice_edge3, advice_edge4, advice_edge5)
+
+advice_seeking = graph.data.frame(advice_edges, directed = TRUE)
+
+advice_seeking <-simplify(advice_seeking, remove.multiple = F, remove.loops = T)
+
+advice_matrix = as.matrix(as_adjacency_matrix(advice_seeking))
+
+colSums(advice_matrix)
+
+freq = colSums(advice_matrix)==19
+
+for(i in seq_len(length(V(advice_seeking)))){
+  
+  advice_seeking = set.vertex.attribute(advice_seeking, "freq", index = V(advice_seeking), freq)
+  V(advice_seeking)$color =V(advice_seeking)$freq
+  
+  path_advice_seeking = file.path("C:/Users/han05/Dropbox/MSBA Fall/MSBA/Social Network Analytics/graph/#3",paste(V(advice_seeking),"#3plot",".pdf", sep = ""))
+  
+  pdf(file= path_advice_seeking)
+  plot.igraph(advice_seeking,vertex.label=NA, layout=layout.fruchterman.reingold, vertex.label.color="black",edge.color="black",edge.width=E(advice_seeking)$weight,vertex.size = 12, edge.arrow.size=.5,edge.curved=FALSE)
+  dev.off()
+  
+}
+
+###########################################################################################################################
+#4 go back to rm(list = ls(all = TRUE)) and cleaning again
+
+scale3 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(0, 0, 0, 0, 1, 1, 1, 0, 0))
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale3[,1], scale3[,2])
+
+adj3 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj3) = adj3[,1]
+adj3 = adj3[,-1]
+adj3 = adj3[sort(rownames(adj3)),sort(colnames(adj3))]
+
+trusting2 = adj3
+trusting2[trusting2 < 0] = 0
+trusting2 = graph.adjacency(as.matrix(trusting2), "directed", weighted = TRUE)
+
+reciprocity(trusting2)
+dyad_census(trusting2)
+2*dyad_census(trusting2)$mut/ecount(trusting2)
+
+#count: 152
+#prob reciprocated : 0.77
+
+###################################################################################################
+#go back to rm(list = ls(all = TRUE)) and cleaning again
+
+scale4 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(1, 1, 1, 0, 0, 0, 0, 0, 0))
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale4[,1], scale4[,2])
+
+adj4 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj4) = adj4[,1]
+adj4 = adj4[,-1]
+adj4 = adj4[sort(rownames(adj4)),sort(colnames(adj4))]
+
+distrusting2 = adj4
+distrusting2 = graph.adjacency(as.matrix(distrusting2), "directed", weighted = TRUE)
+
+reciprocity(distrusting2)
+dyad_census(distrusting2)
+2*dyad_census(distrusting2)$mut/ecount(distrusting2)
+
+#2 is answer 
+#count: 2
+#prob reciprocated: 0.13
+
+reciprocity(advice_seeking)
+dyad_census(advice_seeking)
+2*dyad_census(advice_seeking)$mut/ecount(advice_seeking)
+
+#count: 33
+#prob reciprocated: 0.44
+
+#Relationships reciprocated in trust network: 152; since probability of relationship reciprocated is 0.77, it is more likely to be reciprocated than a random chance (>0.50) 
+#Relationships reciprocated in distrust network: 2; since probability of relationship reciprocated is 0.13, it is less likely to be reciprocated than a random chance (<0.50) 
+#Relationships reciprocated in advice_seeking: 33; since probability of relationship reciprocated is 0.44, it is little bit less likely to be reciprocated than a random chance (<0.50) 
+
+
+#########################################################################################################################
+#5
+#go back to rm(list = ls(all = TRUE)) and cleaning again
+
+advice_edge1 = cbind(data[,1], data$V38)
+advice_edge2 = cbind(data[,1], data$V39)
+advice_edge3 = cbind(data[,1], data$V40)
+advice_edge4 = cbind(data[,1], data$V41)
+advice_edge5 = cbind(data[,1], data$V42)
+
+advice_edges = rbind(advice_edge1, advice_edge2, advice_edge3, advice_edge4, advice_edge5)
+advice_seeking = graph.data.frame(advice_edges, directed = TRUE)
+advice_matrix = as.matrix(as_adjacency_matrix(advice_seeking))
+advice_matrix = subset(advice_matrix, select =-c(31,32,33,34,35))
+advice_matrix = advice_matrix[-c(31,32,33,34,35 ),]
+
+
+scale3 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(0, 0, 0, 0, 1, 1, 1, 0, 0))
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale3[,1], scale3[,2])
+
+adj3 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj3) = adj3[,1]
+adj3 = adj3[,-1]
+adj3 = adj3[sort(rownames(adj3)),sort(colnames(adj3))]
+
+trusting3<- data.matrix(adj3)
+trusting3 = trusting3[order(as.numeric(rownames(trusting3))),order(as.numeric(colnames(trusting3)))]
+advice_matrix = advice_matrix[order(as.numeric(rownames(advice_matrix))), order(as.numeric(colnames(advice_matrix)))]
+advice_matrix2<-advice_matrix+trusting3  
+length(which(advice_matrix2==2))
+
+#121 relationsihps exist in trust network also exist in advice network.
+
+#################################################################################################################
+#go back to rm(list = ls(all = TRUE)) and cleaning again
+
+advice_edge1 = cbind(data[,1], data$V38)
+advice_edge2 = cbind(data[,1], data$V39)
+advice_edge3 = cbind(data[,1], data$V40)
+advice_edge4 = cbind(data[,1], data$V41)
+advice_edge5 = cbind(data[,1], data$V42)
+
+advice_edges = rbind(advice_edge1, advice_edge2, advice_edge3, advice_edge4, advice_edge5)
+advice_seeking = graph.data.frame(advice_edges, directed = TRUE)
+advice_matrix = as.matrix(as_adjacency_matrix(advice_seeking))
+advice_matrix = subset(advice_matrix, select =-c(31,32,33,34,35))
+advice_matrix = advice_matrix[-c(31,32,33,34,35 ),]
+
+scale4 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(1, 1, 1, 0, 0, 0, 0, 0, 0))
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale4[,1], scale4[,2])
+
+adj4 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj4) = adj4[,1]
+adj4 = adj4[,-1]
+adj4 = adj4[sort(rownames(adj4)),sort(colnames(adj4))]
+
+distrusting3<-data.matrix(adj4)
+distrusting3 = distrusting3[order(as.numeric(rownames(distrusting3))),order(as.numeric(colnames(distrusting3)))]
+advice_matrix = advice_matrix[order(as.numeric(rownames(advice_matrix))), order(as.numeric(colnames(advice_matrix)))]
+advice_matrix3 = advice_matrix+distrusting3
+length(which(advice_matrix3==2))
+  
+# 1 relationship exist in distrust network al#so exist in advice network.
+# This is not surprising since people are generally more likely to exchange advice within trusting network than in distrusting network. 
+
+#################################################################################################################
+#Extra Challanging Problem 
+#go back to rm(list = ls(all = TRUE)) and cleaning again
+
+advice_edge1 = cbind(data[,1], data$V38)
+advice_edge2 = cbind(data[,1], data$V39)
+advice_edge3 = cbind(data[,1], data$V40)
+advice_edge4 = cbind(data[,1], data$V41)
+advice_edge5 = cbind(data[,1], data$V42)
+
+advice_edges = rbind(advice_edge1, advice_edge2, advice_edge3, advice_edge4, advice_edge5)
+advice_seeking = graph.data.frame(advice_edges, directed = TRUE)
+advice_matrix = as.matrix(as_adjacency_matrix(advice_seeking))
+advice_matrix = subset(advice_matrix, select =-c(31,32,33,34,35))
+advice_matrix = advice_matrix[-c(31,32,33,34,35 ),]
+
+scale = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(-3, -2, -1, 0, 1, 2, 3, 0, 0))
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale[,1], scale[,2])
+
+adj = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj) = adj[,1]
+adj = adj[,-1]
+adj = adj[sort(rownames(adj)),sort(colnames(adj))]
+
+trusting = adj
+trusting[trusting < 0] = 0
+trusting<- data.matrix(adj)
+trusting = trusting[order(as.numeric(rownames(trusting))),order(as.numeric(colnames(trusting)))]
+advice_matrix = advice_matrix[order(as.numeric(rownames(advice_matrix))), order(as.numeric(colnames(advice_matrix)))]
+trusting1<-advice_matrix+trusting  
+trusting = graph.adjacency(as.matrix(trusting1), "directed", weighted = TRUE)
+plot.igraph(trusting,vertex.label=NA,layout=layout.fruchterman.reingold, vertex.label.color="black",edge.color="black",edge.width=E(trusting)$weight,vertex.size = 12, edge.arrow.size=.3,edge.curved=FALSE)
+
+
+
+######################################################################################################################
+advice_edge1 = cbind(data[,1], data$V38)
+advice_edge2 = cbind(data[,1], data$V39)
+advice_edge3 = cbind(data[,1], data$V40)
+advice_edge4 = cbind(data[,1], data$V41)
+advice_edge5 = cbind(data[,1], data$V42)
+
+advice_edges = rbind(advice_edge1, advice_edge2, advice_edge3, advice_edge4, advice_edge5)
+advice_seeking = graph.data.frame(advice_edges, directed = TRUE)
+advice_matrix = as.matrix(as_adjacency_matrix(advice_seeking))
+advice_matrix = subset(advice_matrix, select =-c(31,32,33,34,35))
+advice_matrix = advice_matrix[-c(31,32,33,34,35 ),]
+
+
+scale2 = cbind(c("Extremely Distrust  1", "Distrust  2", "Slightly Distrust  3", "Neither Distrust Nor Trust  4", "Slightly Trust  5","Trust  6", "Extremely Trust  7", "I don't know this person.", "This is my own name."), c(3, 2, 1, 0, 0, 0, 0, 0, 0))
+
+
+column_wise_replace = function(DT, x, y) {
+  for(i in seq_along(x)){
+    for (j in seq_len(ncol(DT))){
+      set(DT,which(DT[[j]] == x[i]),j,y[i])
+    }
+  }
+}
+column_wise_replace(data, scale2[,1], scale2[,2])
+
+adj2 = as.data.frame(data[,1:(ncol(data) - 5)])
+rownames(adj2) = adj2[,1]
+adj2 = adj2[,-1]
+adj2 = adj2[sort(rownames(adj2)),sort(colnames(adj2))]
+
+distrusting = adj2
+distrusting[distrusting < 0] = 0
+distrusting<-data.matrix(adj2)
+distrusting = distrusting[order(as.numeric(rownames(distrusting))),order(as.numeric(colnames(distrusting)))]
+advice_matrix = advice_matrix[order(as.numeric(rownames(advice_matrix))), order(as.numeric(colnames(advice_matrix)))]
+distrusting1<-advice_matrix+distrusting
+distrusting = graph.adjacency(as.matrix(distrusting1), "directed", weighted = TRUE)
+plot.igraph(distrusting,vertex.label=NA,layout=layout.fruchterman.reingold, vertex.label.color="black",edge.color="black",edge.width=E(distrusting)$weight,vertex.size = 12, edge.arrow.size=.3,edge.curved=FALSE)
+
+
+
